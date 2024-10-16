@@ -1,0 +1,43 @@
+services:
+  web-app:
+    build:
+      context: .
+    ports:
+        - "8000:8000"
+    volumes:
+      - ./apps:/apps
+    command: >
+      sh -c "python manage.py runserver 0.0.0.0:8000"
+
+  redis:
+    image: redis:7.0.5-alpine
+    hostname: redis
+
+  worker:
+    build:
+      context: .
+    hostname: worker
+    entrypoint: celery
+    command: -A celery_app.app worker --loglevel=info
+    volumes:
+      - ./apps:/apps
+    links:
+      - redis
+    depends_on:
+      - redis
+
+  flower:
+    build:
+      context: .
+    hostname: flower
+    entrypoint: celery
+    command: -A celery_app.app flower --loglevel=info
+    volumes:
+      - ./apps:/apps
+    links:
+      - redis
+    depends_on:
+      - redis
+    ports:
+      - '5555:5555'
+
